@@ -23,17 +23,28 @@ RULES:
 3. Use keywords, terminology, and phrasing from the job description.
 4. Keep the tone professional, concise, and achievement-oriented.
 5. The candidate has a petroleum engineering background and is completing a \
-Master's in Computer Engineering — present this career transition as a strength \
-(cross-domain problem solving, engineering mindset)."""
+Master's in Computer Engineering — present this career transition as a strength.
+6. When mentioning AI-assisted development skills, NEVER name specific products \
+(no Copilot, no Claude, no ChatGPT, no Cursor). Instead say "coding agents", \
+"LLM-assisted development", "AI coding tools", or similar generic terms.
+7. The entire CV must fit on ONE page — keep everything concise."""
+
+SUMMARY_PREFIX = (
+    "Results-driven professional translating 7 years of rigorous engineering "
+    "problem-solving into Full-Stack Software Development. Currently completing "
+    "an MSc in Computer Engineering with hands-on expertise"
+)
+
+FIXED_PROJECTS = [
+    "Designed and implemented (Master's Thesis) a 'JWT Decoupling Strategy' within a polyglot Google Cloud Microservices environment to optimize high-traffic network bottlenecks. Achieved a 15% reduction in network traffic and significantly improved system performance, reducing average gRPC latency by 50% and P99 tail latency by 25% through meticulous A/B testing and gRPC Interceptor integration.",
+    "Developed and deployed a full-stack web application to AWS, implementing robust authentication, secure network traffic, and comprehensive metric monitoring. This project showcased end-to-end development, API-first principles, and foundational DevOps practices for rapid iteration and deployment.",
+    "Engineered a scalable, end-to-end data pipeline utilizing Kafka, Spark, and Elasticsearch for real-time processing and big data storage of e-commerce analytics. Containerized the entire system with Docker, demonstrating robust automation capabilities and efficient data management.",
+]
 
 
 def _build_prompt(original_content, job):
     """Build the tailoring prompt from original CV content and job data."""
-    summary = "\n".join(original_content.get("PROFESSIONAL SUMMARY", []))
-    projects = "\n\n".join(original_content.get("PROJECTS", []))
     skills = "\n".join(original_content.get("TECHNICAL SKILLS", []))
-    education = "\n".join(original_content.get("EDUCATION", []))
-    experience = "\n".join(original_content.get("EXPERIENCE", []))
 
     job_meta = f"Title: {job.title or 'N/A'}\nCompany: {job.company or 'N/A'}"
     if job.job_level:
@@ -46,22 +57,19 @@ def _build_prompt(original_content, job):
     return f"""\
 Tailor the following CV sections for the target job below.
 
-═══ CANDIDATE'S CURRENT CV ═══
+═══ CANDIDATE INFO ═══
 
-PROFESSIONAL SUMMARY:
-{summary}
+The candidate's known tech stack: C#, JavaScript, Python, HTML5/CSS3, .NET (ASP.NET Core, EF Core), \
+React.js, Node.js, RESTful APIs, MS SQL Server, PostgreSQL, NoSQL, Elasticsearch, Kafka, Apache Spark, \
+AWS, Docker, Kubernetes, Git/GitHub, CI/CD, gRPC, JWT, Google Cloud.
 
-PROJECTS:
-{projects}
-
-TECHNICAL SKILLS:
+Current Technical Skills section:
 {skills}
 
-EDUCATION (context only — DO NOT modify):
-{education}
-
-EXPERIENCE (context only — DO NOT modify):
-{experience}
+Fixed projects (for context — DO NOT modify these):
+1. {FIXED_PROJECTS[0]}
+2. {FIXED_PROJECTS[1]}
+3. {FIXED_PROJECTS[2]}
 
 ═══ TARGET JOB ═══
 {job_meta}
@@ -71,35 +79,54 @@ Job Description:
 
 ═══ INSTRUCTIONS ═══
 
-1. **PROFESSIONAL SUMMARY** (2-3 sentences):
-   - Rewrite to align with this specific role.
-   - Use keywords from the job description naturally.
-   - Mention the candidate's engineering background and CS master's degree as strengths.
+1. **PROFESSIONAL SUMMARY CONTINUATION** (1-2 SHORT sentences ONLY):
+   The summary ALWAYS starts with this fixed prefix (do NOT include it in your output):
+   "{SUMMARY_PREFIX}"
+   
+   Write ONLY the continuation that comes after "...with hands-on expertise".
+   - It must start with " in" or a comma, connecting naturally to the prefix.
+   - Mention relevant technologies from the job description (e.g., if they want Java, mention Java).
+   - End with expressing genuine interest in the company's DOMAIN or SECTOR \
+(e.g., "interested in electronic warfare systems", "interested in fintech solutions", \
+"interested in defense technologies"). Derive this from the job description context.
+   - Do NOT mention the company name. Express interest in the FIELD, not the company.
+   - Keep it to 1-2 sentences MAX — the CV must fit on one page.
+   - Keep it to 1-2 sentences MAX — the CV must fit on one page.
 
-2. **PROJECTS** (3-5 entries):
-   - Rewrite existing projects to emphasize technologies and skills relevant to this job.
-   - You may add 1-2 new realistic project descriptions based on the candidate's known \
-tech stack (Python, C#, .NET, React, AWS, Docker, Kafka, Spark, Elasticsearch, gRPC, Kubernetes).
-   - Each project: 1-3 sentences, achievement-oriented with measurable results where possible.
-   - If a project has a distinct name/title, include it. Otherwise leave title as empty string.
+2. **FOURTH PROJECT** (1 entry only — 2-3 sentences):
+   - Write ONE project description that aligns with what the job EXPECTS the candidate to DO \
+(look for sections like "responsibilities", "what we expect", "what you'll do").
+   - Focus on practical, everyday software development work (building UIs, APIs, improving \
+existing systems, writing clean maintainable code) — NOT fancy simulations, threat monitoring, \
+or overly complex scenarios.
+   - Use technologies and skills mentioned in the job posting.
+   - Make it realistic and simple — something a CS master's student would actually build.
+   - Achievement-oriented with measurable results where possible.
+   - Do NOT overlap with the 3 fixed projects above:
+     * Project 1 covers: gRPC, JWT, microservices, Google Cloud, A/B testing
+     * Project 2 covers: full-stack web app, AWS, authentication, DevOps
+     * Project 3 covers: Kafka, Spark, Elasticsearch, data pipeline, Docker
+   - The fourth project must cover DIFFERENT technologies or a different type of work.
 
-3. **TECHNICAL SKILLS** (4-6 categories):
-   - Mirror the exact technologies and keywords from the job posting.
-   - Group into categories like "Programming Languages", "Frameworks & Libraries", \
-"Database Systems", "Tools & Platforms", "Cloud & DevOps", etc.
-   - Include technologies the candidate actually knows plus closely related ones that a \
-developer with this stack would reasonably know.
+3. **TECHNICAL SKILLS** (exactly 4 lines, merged/compact to fit 1 page):
+   - Line 1: "Programming Languages: ..." 
+   - Line 2: "Frameworks & Libraries: ..."
+   - Line 3: "Database Systems: ..." (can include data tools like Kafka, Spark here)
+   - Line 4: "Cloud & DevOps: ..."
+   - Mirror keywords/technologies from the job posting.
+   - Include the candidate's real skills plus closely related ones a developer with this stack would know.
+   - If mentioning AI skills, use generic terms only (coding agents, LLMs, AI coding tools). \
+NEVER mention Copilot, Claude, ChatGPT, Cursor, or any specific AI product names.
 
 Respond ONLY with valid JSON in this exact structure:
 {{
-  "professional_summary": "The tailored summary text",
-  "projects": [
-    {{"title": "Project Title or empty string", "description": "Project description text"}},
-    ...
-  ],
+  "summary_continuation": "in .NET and React... (the part after the fixed prefix)",
+  "fourth_project": "Built a ... achieving ...",
   "technical_skills": {{
-    "Category Name": "comma-separated skills list",
-    ...
+    "Programming Languages": "C#, JavaScript, ...",
+    "Frameworks & Libraries": ".NET ..., React.js, ...",
+    "Database Systems": "MS SQL Server, ...",
+    "Cloud & DevOps": "AWS, Docker, ..."
   }}
 }}"""
 
@@ -122,10 +149,10 @@ def tailor_cv(original_content, job, max_retries=3):
             result = json.loads(response.text)
 
             # Validate structure
-            if "professional_summary" not in result:
-                raise ValueError("Missing 'professional_summary' in response")
-            if not isinstance(result.get("projects"), list):
-                raise ValueError("'projects' must be a list")
+            if "summary_continuation" not in result:
+                raise ValueError("Missing 'summary_continuation' in response")
+            if "fourth_project" not in result:
+                raise ValueError("Missing 'fourth_project' in response")
             if not isinstance(result.get("technical_skills"), dict):
                 raise ValueError("'technical_skills' must be a dict")
 

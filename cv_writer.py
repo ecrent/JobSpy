@@ -9,6 +9,11 @@ Sections are processed bottom-to-top so paragraph indices stay valid.
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
+from docx.shared import Pt
+
+# Spacing constants
+SECTION_SPACING = Pt(7)    # between sections (before heading)
+PARAGRAPH_SPACING = Pt(2)  # between paragraphs within a section
 
 SECTION_HEADINGS_UPPER = {
     "PROFESSIONAL SUMMARY",
@@ -73,13 +78,31 @@ def _insert_paragraph_after(ref_el, *runs):
     return p
 
 
+from cv_tailor import SUMMARY_PREFIX, FIXED_PROJECTS
+
+
+def _apply_spacing(doc):
+    """Set compact spacing: larger gap before section headings, small gap within sections."""
+    sections = _find_sections(doc)
+    heading_indices = {info["heading_idx"] for info in sections.values()}
+
+    for i, p in enumerate(doc.paragraphs):
+        pf = p.paragraph_format
+        if i in heading_indices:
+            pf.space_before = SECTION_SPACING
+            pf.space_after = PARAGRAPH_SPACING
+        else:
+            pf.space_before = PARAGRAPH_SPACING
+            pf.space_after = Pt(0)
+
+
 def write_tailored_cv(source_path, output_path, tailored):
     """Create a new .docx with tailored mutable sections.
 
     Args:
         source_path: Path to the original base CV .docx
         output_path: Path for the tailored output .docx
-        tailored: Dict with keys: professional_summary, projects, technical_skills
+        tailored: Dict with keys: summary_continuation, fourth_project, technical_skills
     """
     doc = Document(source_path)
 
@@ -98,7 +121,7 @@ def write_tailored_cv(source_path, output_path, tailored):
                 _make_run(skills),
             )
 
-    # --- PROJECTS ---
+    # --- PROJECTS (3 fixed + 1 generated) ---
     sections = _find_sections(doc)
     if "PROJECTS" in sections:
         s = sections["PROJECTS"]
@@ -106,24 +129,26 @@ def write_tailored_cv(source_path, output_path, tailored):
             _remove_content(doc, s["start"], s["end"])
         heading_el = doc.paragraphs[s["heading_idx"]]._element
         ref = heading_el
-        for project in tailored["projects"]:
-            title = project.get("title", "")
-            desc = project.get("description", "")
-            if title:
-                ref = _insert_paragraph_after(ref, _make_run(title))
-            if desc:
-                ref = _insert_paragraph_after(ref, _make_run(desc))
+        for project_text in FIXED_PROJECTS:
+            ref = _insert_paragraph_after(ref, _make_run(project_text))
+        # Fourth project from LLM
+        ref = _insert_paragraph_after(ref, _make_run(tailored["fourth_project"]))
 
-    # --- PROFESSIONAL SUMMARY ---
+    # --- PROFESSIONAL SUMMARY (fixed prefix + generated continuation) ---
     sections = _find_sections(doc)
     if "PROFESSIONAL SUMMARY" in sections:
         s = sections["PROFESSIONAL SUMMARY"]
         if s["start"] <= s["end"]:
             _remove_content(doc, s["start"], s["end"])
         heading_el = doc.paragraphs[s["heading_idx"]]._element
+        continuation = tailored["summary_continuation"]
+        if continuation and not continuation.startswith((" ", ",")):
+            continuation = " " + continuation
+        full_summary = SUMMARY_PREFIX + continuation
         _insert_paragraph_after(
             heading_el,
-            _make_run(tailored["professional_summary"]),
+            _make_run(full_summary),
         )
 
+    _apply_spacing(doc)
     doc.save(output_path)

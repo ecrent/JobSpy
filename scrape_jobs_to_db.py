@@ -18,7 +18,7 @@ SEARCH_TERMS = ["YAZILIM", "DEVELOPER", "GAME", "JAVA", "IT"]
 LOCATION = "Ankara"
 
 # Skip jobs with these words in the title
-SENIOR_KEYWORDS = {"senior", "sr.", "lead", "principal", "staff", "director", "manager", "head"}
+SENIOR_KEYWORDS = {"senior", "sr.", "lead", "principal", "staff", "director", "manager", "head", "kıdemli", "kdemli"}
 INTERN_KEYWORDS = {"internship", "intern", "stajyer", "staj"}
 SKIP_KEYWORDS = SENIOR_KEYWORDS | INTERN_KEYWORDS
 
