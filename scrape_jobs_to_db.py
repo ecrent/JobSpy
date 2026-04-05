@@ -1,4 +1,3 @@
-import csv
 import os
 from datetime import datetime
 
@@ -15,6 +14,22 @@ proxy_str = os.getenv("PROXIES", "")
 proxies = [p.strip() for p in proxy_str.split(",") if p.strip()]
 print(f"Loaded {len(proxies)} proxies")
 
+SEARCH_TERMS = ["YAZILIM", "DEVELOPER", "GAME", "JAVA", "IT"]
+LOCATION = "Ankara"
+
+# Skip jobs with these words in the title
+SENIOR_KEYWORDS = {"senior", "sr.", "lead", "principal", "staff", "director", "manager", "head"}
+INTERN_KEYWORDS = {"internship", "intern", "stajyer", "staj"}
+SKIP_KEYWORDS = SENIOR_KEYWORDS | INTERN_KEYWORDS
+
+
+def _should_skip(title: str) -> bool:
+    """Return True if the title is a senior-level or internship position."""
+    if not title:
+        return False
+    words = title.lower().split()
+    return bool(SKIP_KEYWORDS & set(words))
+
 
 def scrape_and_store(
     search_term: str,
@@ -23,7 +38,7 @@ def scrape_and_store(
     is_remote: bool = False,
     site_name: str = "linkedin",
 ):
-    """Scrape jobs and insert into the database, skipping duplicates."""
+    """Scrape jobs and insert into the database, skipping duplicates and senior roles."""
     print(f"\nScraping: '{search_term}' in '{location}' (remote={is_remote}, wanted={results_wanted})")
 
     jobs_df = scrape_jobs(
@@ -40,14 +55,22 @@ def scrape_and_store(
         print("No jobs found.")
         return 0
 
-    print(f"Scraped {len(jobs_df)} jobs. Inserting into database...")
+    print(f"Scraped {len(jobs_df)} jobs. Filtering and inserting...")
 
     session = SessionLocal()
     inserted = 0
     skipped = 0
+    filtered = 0
 
     try:
         for _, row in jobs_df.iterrows():
+            title = row.get("title") or ""
+
+            # Skip senior-level and internship positions
+            if _should_skip(title):
+                filtered += 1
+                continue
+
             # Parse location string "City, State, Country" into parts
             loc_str = str(row.get("location", "")) if row.get("location") else ""
             loc_parts = [p.strip() for p in loc_str.split(",")]
@@ -62,17 +85,6 @@ def scrape_and_store(
             elif job_type:
                 job_type = str(job_type)
 
-            # Parse emails list to string
-            emails = row.get("emails")
-            if isinstance(emails, list):
-                emails = ", ".join(emails)
-
-            # Parse compensation
-            comp_min = row.get("min_amount")
-            comp_max = row.get("max_amount")
-            comp_currency = row.get("currency")
-            comp_interval = row.get("interval")
-
             job_url = str(row.get("job_url", ""))
             if not job_url:
                 continue
@@ -80,11 +92,10 @@ def scrape_and_store(
             stmt = insert(Job).values(
                 site=site_name,
                 scraped_at=datetime.utcnow(),
-                title=row.get("title"),
+                title=title,
                 company=row.get("company"),
                 company_url=row.get("company_url"),
                 job_url=job_url,
-                job_url_direct=row.get("job_url_direct"),
                 location_city=city,
                 location_state=state,
                 location_country=country,
@@ -95,60 +106,31 @@ def scrape_and_store(
                 company_industry=row.get("company_industry"),
                 job_function=row.get("job_function"),
                 date_posted=row.get("date_posted"),
-                compensation_min=float(comp_min) if comp_min and str(comp_min) != "nan" else None,
-                compensation_max=float(comp_max) if comp_max and str(comp_max) != "nan" else None,
-                compensation_currency=str(comp_currency) if comp_currency and str(comp_currency) != "nan" else None,
-                compensation_interval=str(comp_interval) if comp_interval and str(comp_interval) != "nan" else None,
-                emails=emails,
-                company_logo=row.get("company_logo"),
                 status="new",
             ).on_conflict_do_nothing(constraint="uq_job_url")
 
             result = session.execute(stmt)
-            if result.rowcount > 0:
+            if result.rowcount:
                 inserted += 1
             else:
                 skipped += 1
 
         session.commit()
-        print(f"Done: {inserted} new jobs inserted, {skipped} duplicates skipped.")
-        return inserted
-
     except Exception as e:
         session.rollback()
-        print(f"Error: {e}")
-        raise
+        raise e
     finally:
         session.close()
 
+    print(f"Done: {inserted} inserted, {skipped} duplicates skipped, {filtered} filtered out (senior/intern)")
+    return inserted
+
 
 if __name__ == "__main__":
-    # Ensure tables exist
     init_db()
 
-    # Scrape Ankara jobs
-    scrape_and_store(
-        search_term="software developer",
-        location="Ankara, Turkey",
-        results_wanted=150,
-        is_remote=False,
-    )
-
-    # Scrape remote jobs for Turkey
-    scrape_and_store(
-        search_term="software developer",
-        location="Turkey",
-        results_wanted=150,
-        is_remote=True,
-    )
-
-    # Print summary
-    session = SessionLocal()
-    total = session.query(Job).count()
-    new_count = session.query(Job).filter(Job.status == "new").count()
-    session.close()
-    print(f"\n{'='*60}")
-    print(f"Total jobs in database: {total}")
-    print(f"New (awaiting review): {new_count}")
-    print(f"{'='*60}")
-    print("Go to Supabase dashboard → Table Editor → jobs to review!")
+    for term in SEARCH_TERMS:
+        # Location-based search (Ankara)
+        scrape_and_store(search_term=term, location=LOCATION, results_wanted=5)
+        # Remote search
+        scrape_and_store(search_term=term, location="Turkey", results_wanted=5, is_remote=True)

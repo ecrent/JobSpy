@@ -11,7 +11,6 @@ from sqlalchemy import (
     Boolean,
     Date,
     DateTime,
-    Float,
     UniqueConstraint,
 )
 from sqlalchemy.orm import declarative_base, sessionmaker
@@ -38,7 +37,6 @@ class Job(Base):
     company = Column(String(300))
     company_url = Column(Text)
     job_url = Column(Text, nullable=False)
-    job_url_direct = Column(Text)
 
     # Location
     location_city = Column(String(200))
@@ -54,18 +52,12 @@ class Job(Base):
     job_function = Column(String(200))
     date_posted = Column(Date)
 
-    # Compensation
-    compensation_min = Column(Float)
-    compensation_max = Column(Float)
-    compensation_currency = Column(String(10))
-    compensation_interval = Column(String(20))
-
-    # Extra
-    emails = Column(Text)
-    company_logo = Column(Text)
-
     # Pipeline status: new → approved → cv_generated → applied → interview / rejected
     status = Column(String(20), default="new")
+
+    # Manual tracking
+    application_status = Column(String(50))
+    results = Column(Text)
 
     __table_args__ = (
         UniqueConstraint("job_url", name="uq_job_url"),
