@@ -130,7 +130,5 @@ if __name__ == "__main__":
     init_db()
 
     for term in SEARCH_TERMS:
-        # Location-based search (Ankara)
-        scrape_and_store(search_term=term, location=LOCATION, results_wanted=5)
-        # Remote search
-        scrape_and_store(search_term=term, location="Turkey", results_wanted=5, is_remote=True)
+        # Remote jobs for Turkish citizens
+        scrape_and_store(search_term=term, location="Turkey", results_wanted=80, is_remote=True)
