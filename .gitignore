@@ -9,5 +9,5 @@
 .env
 dist
 
-/generated/cvs
+/generated_cvs
 talasli_cv_eng.docx
