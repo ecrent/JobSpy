@@ -8,3 +8,6 @@
 *.pyc
 .env
 dist
+
+/generated/cvs
+talasli_cv_eng.docx

@@ -39,6 +39,7 @@ FIXED_PROJECTS = [
     "Designed and implemented (Master's Thesis) a 'JWT Decoupling Strategy' within a polyglot Google Cloud Microservices environment to optimize high-traffic network bottlenecks. Achieved a 15% reduction in network traffic and significantly improved system performance, reducing average gRPC latency by 50% and P99 tail latency by 25% through meticulous A/B testing and gRPC Interceptor integration.",
     "Developed and deployed a full-stack web application to AWS, implementing robust authentication, secure network traffic, and comprehensive metric monitoring. This project showcased end-to-end development, API-first principles, and foundational DevOps practices for rapid iteration and deployment.",
     "Engineered a scalable, end-to-end data pipeline utilizing Kafka, Spark, and Elasticsearch for real-time processing and big data storage of e-commerce analytics. Containerized the entire system with Docker, demonstrating robust automation capabilities and efficient data management.",
+    "Built an AI-powered job application assistant using Java with LangChain4j and Spring Boot, integrating LLM-based agents to automatically parse job descriptions, tailor resumes, and generate personalized cover letters. Leveraged retrieval-augmented generation (RAG) with a vector store to match candidate skills against job requirements.",
 ]
 
 
@@ -70,6 +71,7 @@ Fixed projects (for context — DO NOT modify these):
 1. {FIXED_PROJECTS[0]}
 2. {FIXED_PROJECTS[1]}
 3. {FIXED_PROJECTS[2]}
+4. {FIXED_PROJECTS[3]}
 
 ═══ TARGET JOB ═══
 {job_meta}
@@ -93,7 +95,7 @@ Job Description:
    - Keep it to 1-2 sentences MAX — the CV must fit on one page.
    - Keep it to 1-2 sentences MAX — the CV must fit on one page.
 
-2. **FOURTH PROJECT** (1 entry only — 2-3 sentences):
+2. **FIFTH PROJECT** (1 entry only — 2-3 sentences):
    - Write ONE project description that aligns with what the job EXPECTS the candidate to DO \
 (look for sections like "responsibilities", "what we expect", "what you'll do").
    - Focus on practical, everyday software development work (building UIs, APIs, improving \
@@ -102,11 +104,12 @@ or overly complex scenarios.
    - Use technologies and skills mentioned in the job posting.
    - Make it realistic and simple — something a CS master's student would actually build.
    - Achievement-oriented with measurable results where possible.
-   - Do NOT overlap with the 3 fixed projects above:
+   - Do NOT overlap with the 4 fixed projects above:
      * Project 1 covers: gRPC, JWT, microservices, Google Cloud, A/B testing
      * Project 2 covers: full-stack web app, AWS, authentication, DevOps
      * Project 3 covers: Kafka, Spark, Elasticsearch, data pipeline, Docker
-   - The fourth project must cover DIFFERENT technologies or a different type of work.
+     * Project 4 covers: LangChain4j, Spring Boot, LLM agents, RAG, vector store, AI
+   - The fifth project must cover DIFFERENT technologies or a different type of work.
 
 3. **TECHNICAL SKILLS** (exactly 4 lines, merged/compact to fit 1 page):
    - Line 1: "Programming Languages: ..." 
@@ -121,7 +124,7 @@ NEVER mention Copilot, Claude, ChatGPT, Cursor, or any specific AI product names
 Respond ONLY with valid JSON in this exact structure:
 {{
   "summary_continuation": "in .NET and React... (the part after the fixed prefix)",
-  "fourth_project": "Built a ... achieving ...",
+  "fifth_project": "Built a ... achieving ...",
   "technical_skills": {{
     "Programming Languages": "C#, JavaScript, ...",
     "Frameworks & Libraries": ".NET ..., React.js, ...",
@@ -151,8 +154,8 @@ def tailor_cv(original_content, job, max_retries=3):
             # Validate structure
             if "summary_continuation" not in result:
                 raise ValueError("Missing 'summary_continuation' in response")
-            if "fourth_project" not in result:
-                raise ValueError("Missing 'fourth_project' in response")
+            if "fifth_project" not in result:
+                raise ValueError("Missing 'fifth_project' in response")
             if not isinstance(result.get("technical_skills"), dict):
                 raise ValueError("'technical_skills' must be a dict")
 

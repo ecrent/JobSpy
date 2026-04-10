@@ -82,15 +82,27 @@ from cv_tailor import SUMMARY_PREFIX, FIXED_PROJECTS
 
 
 def _apply_spacing(doc):
-    """Set compact spacing: larger gap before section headings, small gap within sections."""
+    """Set compact spacing: larger gap before section headings, small gap within sections.
+
+    Technical Skills lines get 2× the paragraph spacing used in Projects.
+    """
     sections = _find_sections(doc)
     heading_indices = {info["heading_idx"] for info in sections.values()}
+
+    # Build set of paragraph indices belonging to Technical Skills content
+    tech_skills_indices = set()
+    if "TECHNICAL SKILLS" in sections:
+        ts = sections["TECHNICAL SKILLS"]
+        tech_skills_indices = set(range(ts["start"], ts["end"] + 1))
 
     for i, p in enumerate(doc.paragraphs):
         pf = p.paragraph_format
         if i in heading_indices:
             pf.space_before = SECTION_SPACING
             pf.space_after = PARAGRAPH_SPACING
+        elif i in tech_skills_indices:
+            pf.space_before = PARAGRAPH_SPACING
+            pf.space_after = Pt(0)
         else:
             pf.space_before = PARAGRAPH_SPACING
             pf.space_after = Pt(0)
@@ -102,7 +114,7 @@ def write_tailored_cv(source_path, output_path, tailored):
     Args:
         source_path: Path to the original base CV .docx
         output_path: Path for the tailored output .docx
-        tailored: Dict with keys: summary_continuation, fourth_project, technical_skills
+        tailored: Dict with keys: summary_continuation, fifth_project, technical_skills
     """
     doc = Document(source_path)
 
@@ -131,8 +143,8 @@ def write_tailored_cv(source_path, output_path, tailored):
         ref = heading_el
         for project_text in FIXED_PROJECTS:
             ref = _insert_paragraph_after(ref, _make_run(project_text))
-        # Fourth project from LLM
-        ref = _insert_paragraph_after(ref, _make_run(tailored["fourth_project"]))
+        # Fifth project from LLM
+        ref = _insert_paragraph_after(ref, _make_run(tailored["fifth_project"]))
 
     # --- PROFESSIONAL SUMMARY (fixed prefix + generated continuation) ---
     sections = _find_sections(doc)

@@ -49,12 +49,12 @@ def main():
     # 2. Get approved jobs from database
     session = SessionLocal()
     try:
-        jobs = session.query(Job).filter(Job.status == "approved").all()
+        jobs = session.query(Job).filter(Job.status == "ready").all()
         if not jobs:
-            log.info("No approved jobs found in database.")
+            log.info("No ready jobs found in database.")
             return
 
-        log.info("Processing %d approved job(s)...", len(jobs))
+        log.info("Processing %d ready job(s)...", len(jobs))
 
         for i, job in enumerate(jobs, 1):
             label = f"[{i}/{len(jobs)}] {job.title} @ {job.company}"
@@ -72,7 +72,7 @@ def main():
                 # 4. Write the tailored .docx
                 company = sanitize_filename(job.company or "unknown")
                 title = sanitize_filename(job.title or "unknown")
-                filename = f"{company}_{title}_CV.docx"
+                filename = f"{company}_{title}_talasli_cv.docx"
                 output_path = os.path.join(OUTPUT_DIR, filename)
 
                 write_tailored_cv(BASE_CV_PATH, output_path, tailored)

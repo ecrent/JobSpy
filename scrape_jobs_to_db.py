@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, UTC
 
 from dotenv import load_dotenv
 from jobspy import scrape_jobs
@@ -15,12 +15,14 @@ proxies = [p.strip() for p in proxy_str.split(",") if p.strip()]
 print(f"Loaded {len(proxies)} proxies")
 
 SEARCH_TERMS = ["YAZILIM", "DEVELOPER", "GAME", "JAVA", "IT"]
-LOCATION = "Ankara"
+LOCATION = "Ankara, Turkey"
 
 # Skip jobs with these words in the title
 SENIOR_KEYWORDS = {"senior", "sr.", "lead", "principal", "staff", "director", "manager", "head", "kıdemli", "kdemli"}
 INTERN_KEYWORDS = {"internship", "intern", "stajyer", "staj"}
 SKIP_KEYWORDS = SENIOR_KEYWORDS | INTERN_KEYWORDS
+
+ALLOWED_JOB_LEVELS = {"entry level", "entry_level", "entry", "associate", "entrylevel"}
 
 
 def _should_skip(title: str) -> bool:
@@ -29,6 +31,13 @@ def _should_skip(title: str) -> bool:
         return False
     words = title.lower().split()
     return bool(SKIP_KEYWORDS & set(words))
+
+
+def _is_beginner_level(job_level: str | None) -> bool:
+    """Return True if the job level is entry level or associate."""
+    if not job_level:
+        return False
+    return job_level.strip().lower() in ALLOWED_JOB_LEVELS
 
 
 def scrape_and_store(
@@ -71,6 +80,12 @@ def scrape_and_store(
                 filtered += 1
                 continue
 
+            # Only keep entry level or associate positions
+            job_level = row.get("job_level")
+            if not _is_beginner_level(job_level):
+                filtered += 1
+                continue
+
             # Parse location string "City, State, Country" into parts
             loc_str = str(row.get("location", "")) if row.get("location") else ""
             loc_parts = [p.strip() for p in loc_str.split(",")]
@@ -91,7 +106,7 @@ def scrape_and_store(
 
             stmt = insert(Job).values(
                 site=site_name,
-                scraped_at=datetime.utcnow(),
+                scraped_at=datetime.now(UTC),
                 title=title,
                 company=row.get("company"),
                 company_url=row.get("company_url"),
@@ -130,5 +145,4 @@ if __name__ == "__main__":
     init_db()
 
     for term in SEARCH_TERMS:
-        # Remote jobs for Turkish citizens
-        scrape_and_store(search_term=term, location="Turkey", results_wanted=80, is_remote=True)
+        scrape_and_store(search_term=term, location=LOCATION, results_wanted=80)
