@@ -34,9 +34,8 @@ def _should_skip(title: str) -> bool:
 
 
 def _is_beginner_level(job_level: str | None) -> bool:
-    """Return True if the job level is entry level or associate."""
     if not job_level:
-        return False
+        return True  # no level info — don't filter out
     return job_level.strip().lower() in ALLOWED_JOB_LEVELS
 
 
