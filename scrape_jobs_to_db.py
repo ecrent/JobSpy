@@ -1,6 +1,8 @@
 import os
+import concurrent.futures
 from datetime import datetime, UTC
 
+import requests
 from dotenv import load_dotenv
 from jobspy import scrape_jobs
 from sqlalchemy.dialects.postgresql import insert
@@ -9,10 +11,55 @@ from db import Job, SessionLocal, init_db
 
 load_dotenv()
 
-# Load proxies
+PROXY_CHECK_URL = "https://www.linkedin.com/jobs/search/?keywords=software+engineer"
+PROXY_CHECK_TIMEOUT = 10
+PROXY_CHECK_WORKERS = 20
+PROXY_TARGET = 15
+_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    )
+}
+
+
+def _check_proxy(proxy_url: str) -> tuple[str, bool]:
+    try:
+        resp = requests.get(
+            PROXY_CHECK_URL,
+            proxies={"http": proxy_url, "https": proxy_url},
+            headers=_HEADERS,
+            timeout=PROXY_CHECK_TIMEOUT,
+            allow_redirects=True,
+        )
+        return proxy_url, resp.status_code < 400
+    except Exception:
+        return proxy_url, False
+
+
+def get_working_proxies(all_proxies: list[str], target: int = PROXY_TARGET) -> list[str]:
+    print(f"Checking {len(all_proxies)} proxies for {target} working ones...")
+    working: list[str] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=PROXY_CHECK_WORKERS) as executor:
+        futures = {executor.submit(_check_proxy, p): p for p in all_proxies}
+        for future in concurrent.futures.as_completed(futures):
+            proxy_url, ok = future.result()
+            if ok:
+                working.append(proxy_url)
+                print(f"  OK  {proxy_url}  ({len(working)}/{target})")
+            if len(working) >= target:
+                for f in futures:
+                    f.cancel()
+                break
+    print(f"Found {len(working)} working proxies.")
+    return working[:target]
+
+
+# Load and check proxies at startup
 proxy_str = os.getenv("PROXIES", "")
-proxies = [p.strip() for p in proxy_str.split(",") if p.strip()]
-print(f"Loaded {len(proxies)} proxies")
+all_proxies = [p.strip() for p in proxy_str.split(",") if p.strip()]
+proxies = get_working_proxies(all_proxies) if all_proxies else []
 
 SEARCH_TERMS = ["YAZILIM", "DEVELOPER", "GAME", "JAVA", "IT"]
 LOCATION = "Ankara, Turkey"
@@ -23,6 +70,15 @@ INTERN_KEYWORDS = {"internship", "intern", "stajyer", "staj"}
 SKIP_KEYWORDS = SENIOR_KEYWORDS | INTERN_KEYWORDS
 
 ALLOWED_JOB_LEVELS = {"entry level", "entry_level", "entry", "associate", "entrylevel"}
+
+# Companies that recruit through their own portals — skip listings from these
+EXCLUDED_COMPANIES = {"aselsan", "tai", "tusas", "türk havacılık ve uzay sanayii"}
+
+
+def _is_excluded_company(company: str | None) -> bool:
+    if not company:
+        return False
+    return company.strip().lower() in EXCLUDED_COMPANIES
 
 
 def _should_skip(title: str) -> bool:
@@ -42,7 +98,7 @@ def _is_beginner_level(job_level: str | None) -> bool:
 def scrape_and_store(
     search_term: str,
     location: str,
-    results_wanted: int = 50,
+    results_wanted: int = 5,
     is_remote: bool = False,
     site_name: str = "linkedin",
 ):
@@ -73,6 +129,11 @@ def scrape_and_store(
     try:
         for _, row in jobs_df.iterrows():
             title = row.get("title") or ""
+
+            # Skip companies that recruit through their own portals
+            if _is_excluded_company(row.get("company")):
+                filtered += 1
+                continue
 
             # Skip senior-level and internship positions
             if _should_skip(title):
@@ -136,7 +197,7 @@ def scrape_and_store(
     finally:
         session.close()
 
-    print(f"Done: {inserted} inserted, {skipped} duplicates skipped, {filtered} filtered out (senior/intern)")
+    print(f"Done: {inserted} inserted, {skipped} duplicates skipped, {filtered} filtered out (senior/intern/excluded company)")
     return inserted
 
 
@@ -144,4 +205,4 @@ if __name__ == "__main__":
     init_db()
 
     for term in SEARCH_TERMS:
-        scrape_and_store(search_term=term, location=LOCATION, results_wanted=80)
+        scrape_and_store(search_term=term, location=LOCATION, results_wanted=20)
