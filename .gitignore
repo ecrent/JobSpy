@@ -8,6 +8,9 @@
 *.pyc
 .env
 dist
+/generated_pdfs
+/logs
+
 
 /generated_cvs
 talasli_cv_eng.docx

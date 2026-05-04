@@ -205,4 +205,4 @@ if __name__ == "__main__":
     init_db()
 
     for term in SEARCH_TERMS:
-        scrape_and_store(search_term=term, location=LOCATION, results_wanted=20)
+        scrape_and_store(search_term=term, location=LOCATION, results_wanted=5)

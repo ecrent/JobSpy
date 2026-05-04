@@ -96,5 +96,7 @@ def main():
     log.info("Done.")
 
 
+generate_cvs_for_ready_jobs = main
+
 if __name__ == "__main__":
     main()

@@ -52,7 +52,7 @@ class Job(Base):
     job_function = Column(String(200))
     date_posted = Column(Date)
 
-    # Pipeline status: new → approved → cv_generated → applied → interview / rejected
+    # Pipeline status: new → ready → cv_generated → emailed → applied / rejected
     status = Column(String(20), default="new")
 
     # Manual tracking

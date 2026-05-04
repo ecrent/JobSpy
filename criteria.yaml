@@ -1,0 +1,52 @@
+industry_filter:
+  description: >
+    Classify whether a job posting is a software engineering or IT role
+    suitable for a computer engineering / software developer candidate.
+  accept_categories:
+    - Software Engineering
+    - Web Development (frontend, backend, full-stack)
+    - Mobile Development (iOS, Android, React Native)
+    - Game Development
+    - DevOps / Cloud Engineering / SRE
+    - Data Engineering / Data Science
+    - IT / Systems Administration
+    - QA / Test Automation
+    - Embedded Software
+    - Cybersecurity (software-focused)
+    - Machine Learning / AI Engineering
+    - Java Developer, C# Developer etc.
+  reject_categories:
+    - Civil Engineering
+    - Mechanical Engineering
+    - Electrical Engineering (hardware-only, no software component)
+    - Construction / Architecture
+    - Chemical Engineering
+    - Industrial Engineering
+    - Mining / Petroleum Engineering
+    - Biomedical Engineering (non-software)
+    - Structural Engineering
+    - Environmental Engineering
+  ambiguous_instruction: >
+    If the title contains "engineer" or "mühendis" (Turkish) but the description
+    is clearly about writing software/code/systems, classify as ACCEPT.
+    If the description is about physical infrastructure, machinery, buildings,
+    or non-digital systems with no meaningful software component, classify as REJECT.
+    When in doubt, ACCEPT.
+
+experience_filter:
+  max_years: 3
+  description: >
+    Reject the job if the posting EXPLICITLY requires more than 3 years of
+    professional software engineering experience. When in doubt, ACCEPT.
+  reject_signals:
+    - 'X+ years where X > 3 (e.g. 4+ years, 5+ years, minimum 5 years)'
+    - 'at least X years where X > 3'
+    - 'X yıl deneyim (Turkish: X years experience) where X > 3'
+    - 'X yıl tecrübe (Turkish: X years experience) where X > 3'
+  accept_signals:
+    - '0-3 years, 1-3 years, 2-3 years, up to 3 years'
+    - 'entry level, junior, associate, fresh graduate, yeni mezun'
+    - 'stajyer, az deneyimli, tecrübesiz (Turkish: inexperienced / new grad)'
+    - No explicit experience requirement mentioned at all
+    - preferred or nice to have experience (not a hard requirement)
+    - '3+ years exactly (borderline — ACCEPT since 3 years qualifies)'
