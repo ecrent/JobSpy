@@ -15,7 +15,9 @@ Triggered by cron as user 'builder'. All output appended to logs/pipeline.log.
 
 import logging
 import os
+import random
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -34,6 +36,7 @@ _stream_handler.setFormatter(_fmt)
 logging.root.setLevel(logging.INFO)
 logging.root.addHandler(_file_handler)
 logging.root.addHandler(_stream_handler)
+logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
 
 # Load .env before local imports so os.getenv() calls at module level work.
 from dotenv import load_dotenv
@@ -94,7 +97,11 @@ def run_pipeline() -> None:
     # --- Stage 1: Scrape ---
     log.info("Stage 1: Scraping jobs...")
     total_inserted = 0
-    for term in SEARCH_TERMS:
+    for i, term in enumerate(SEARCH_TERMS):
+        if i > 0:
+            delay = random.uniform(15, 30)
+            log.info("Waiting %.0fs before next term...", delay)
+            time.sleep(delay)
         try:
             n = scrape_and_store(search_term=term, location=LOCATION, results_wanted=20)
             total_inserted += n
