@@ -14,3 +14,10 @@ dist
 
 /generated_cvs
 talasli_cv_eng.docx
+
+# Personal/private scripts
+cv_parser.py
+cv_tailor.py
+cv_writer.py
+llm_filter.py
+scrape_jobs_to_db.py
